@@ -14,7 +14,7 @@ CORS(app)
 
 BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
 MODEL_DIR    = os.path.join(BASE_DIR, 'model')
-FRONTEND_DIR = os.path.join(BASE_DIR, 'frontend')
+FRONTEND_DIR = BASE_DIR
 DB_PATH      = os.path.join(BASE_DIR, 'database', 'detections.db')
 
 # Load Model
