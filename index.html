@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TrashAI - Smart Recycling Detection</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#0a0f0a;--surface:#111811;--card:#162016;--accent:#39d353;--accent2:#7ee787;--text:#e8f5e9;--muted:#6a8f6a;--border:#1e3a1e;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;}
+/* Animated background */
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 20%,rgba(57,211,83,0.05) 0%,transparent 50%),radial-gradient(ellipse at 80% 80%,rgba(57,211,83,0.03) 0%,transparent 50%);pointer-events:none;z-index:0;}
+
+nav{position:fixed;top:0;width:100%;z-index:100;padding:20px 60px;display:flex;justify-content:space-between;align-items:center;background:rgba(10,15,10,0.8);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+.logo{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--accent);}
+.logo span{color:var(--text);}
+.nav-links{display:flex;gap:32px;list-style:none;}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;transition:color 0.2s;}
+.nav-links a:hover{color:var(--accent);}
+.nav-cta{background:var(--accent);color:#000;padding:10px 24px;border-radius:6px;font-weight:600;font-size:14px;text-decoration:none;font-family:'Syne',sans-serif;transition:all 0.2s;}
+.nav-cta:hover{background:var(--accent2);}
+
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:120px 60px 80px;position:relative;z-index:1;}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(57,211,83,0.1);border:1px solid rgba(57,211,83,0.3);padding:8px 16px;border-radius:100px;font-size:13px;color:var(--accent);margin-bottom:32px;}
+.badge-dot{width:6px;height:6px;background:var(--accent);border-radius:50%;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+h1{font-family:'Syne',sans-serif;font-size:clamp(42px,7vw,88px);font-weight:800;line-height:1.0;margin-bottom:24px;letter-spacing:-2px;}
+h1 .green{color:var(--accent);}
+.hero-sub{font-size:18px;color:var(--muted);max-width:540px;margin:0 auto 48px;line-height:1.7;}
+.hero-buttons{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;}
+.btn-primary{background:var(--accent);color:#000;padding:16px 36px;border-radius:8px;font-weight:700;font-size:16px;text-decoration:none;font-family:'Syne',sans-serif;transition:all 0.2s;display:inline-flex;align-items:center;gap:8px;}
+.btn-primary:hover{background:var(--accent2);transform:translateY(-2px);}
+.btn-secondary{background:transparent;color:var(--text);padding:16px 36px;border-radius:8px;font-weight:600;font-size:16px;text-decoration:none;border:1px solid var(--border);transition:all 0.2s;}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+
+/* Stats row */
+.stats-row{display:flex;justify-content:center;gap:60px;margin-top:80px;padding-top:60px;border-top:1px solid var(--border);}
+.stat{text-align:center;}
+.stat-num{font-family:'Syne',sans-serif;font-size:36px;font-weight:800;color:var(--accent);}
+.stat-label{font-size:13px;color:var(--muted);margin-top:4px;}
+
+/* Classes section */
+.section{padding:100px 60px;max-width:1200px;margin:0 auto;position:relative;z-index:1;}
+.section-tag{font-size:12px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:3px;margin-bottom:16px;}
+.section-title{font-family:'Syne',sans-serif;font-size:clamp(32px,4vw,48px);font-weight:800;margin-bottom:16px;letter-spacing:-1px;}
+.section-sub{color:var(--muted);font-size:16px;max-width:500px;line-height:1.7;margin-bottom:56px;}
+
+.classes-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+.class-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:28px;transition:all 0.3s;cursor:default;}
+.class-card:hover{border-color:var(--accent);transform:translateY(-4px);}
+.class-icon{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:16px;}
+.class-name{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:8px;}
+.class-desc{font-size:14px;color:var(--muted);line-height:1.6;}
+.class-badge{display:inline-block;margin-top:12px;padding:4px 12px;border-radius:100px;font-size:12px;font-weight:600;}
+.recyclable{background:rgba(57,211,83,0.1);color:var(--accent);}
+.not-recyclable{background:rgba(244,67,54,0.1);color:#f44336;}
+
+/* How it works */
+.how-section{padding:100px 60px;background:var(--surface);position:relative;z-index:1;}
+.how-inner{max-width:1200px;margin:0 auto;}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:40px;margin-top:56px;}
+.step{text-align:center;}
+.step-num{font-family:'Syne',sans-serif;font-size:64px;font-weight:800;color:rgba(57,211,83,0.15);line-height:1;margin-bottom:16px;}
+.step-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:12px;}
+.step-desc{font-size:15px;color:var(--muted);line-height:1.7;}
+
+/* Tech stack */
+.tech-section{padding:80px 60px;max-width:1200px;margin:0 auto;position:relative;z-index:1;}
+.tech-pills{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px;}
+.tech-pill{background:var(--card);border:1px solid var(--border);padding:10px 20px;border-radius:100px;font-size:14px;font-weight:500;color:var(--muted);}
+
+/* CTA */
+.cta-section{padding:100px 60px;text-align:center;position:relative;z-index:1;}
+.cta-box{background:var(--card);border:1px solid rgba(57,211,83,0.2);border-radius:20px;padding:80px;max-width:700px;margin:0 auto;}
+.cta-title{font-family:'Syne',sans-serif;font-size:42px;font-weight:800;margin-bottom:16px;}
+.cta-sub{color:var(--muted);font-size:16px;margin-bottom:40px;}
+
+footer{padding:40px 60px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1;}
+.footer-text{font-size:14px;color:var(--muted);}
+.footer-logo{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--accent);}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Trash<span>AI</span></div>
+  <ul class="nav-links">
+    <li><a href="#classes">Categories</a></li>
+    <li><a href="#how">How It Works</a></li>
+  </ul>
+  <a href="detect.html" class="nav-cta">Start Detection →</a>
+</nav>
+
+<section class="hero">
+  <div>
+    <div class="hero-badge">
+      <span class="badge-dot"></span>
+      CNN-Powered Waste Classification
+    </div>
+    <h1>Smart <span class="green">Trash</span><br>Detection AI</h1>
+    <p class="hero-sub">Upload any image and our CNN model instantly identifies the waste type and tells you exactly how to recycle it.</p>
+    <div class="hero-buttons">
+      <a href="detect.html" class="btn-primary">🔍 Detect Trash →</a>
+      <a href="#how" class="btn-secondary">How It Works</a>
+    </div>
+    <div class="stats-row">
+      <div class="stat"><div class="stat-num">6</div><div class="stat-label">Waste Categories</div></div>
+      <div class="stat"><div class="stat-num">74%+</div><div class="stat-label">Model Accuracy</div></div>
+      <div class="stat"><div class="stat-num">CNN</div><div class="stat-label">MobileNetV2</div></div>
+      <div class="stat"><div class="stat-num">5</div><div class="stat-label">Recyclable Types</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="classes">
+  <div class="section-tag">Categories</div>
+  <h2 class="section-title">6 Waste Categories</h2>
+  <p class="section-sub">Our model classifies waste into 6 categories with recycling guidance for each.</p>
+  <div class="classes-grid">
+    <div class="class-card">
+      <div class="class-icon" style="background:rgba(139,105,20,0.15)">📦</div>
+      <div class="class-name">Cardboard</div>
+      <div class="class-desc">Boxes, packaging, paper tubes. Flatten before recycling.</div>
+      <span class="class-badge recyclable">♻ Recyclable</span>
+    </div>
+    <div class="class-card">
+      <div class="class-icon" style="background:rgba(33,150,243,0.15)">🍶</div>
+      <div class="class-name">Glass</div>
+      <div class="class-desc">Bottles and jars. Rinse and separate by color.</div>
+      <span class="class-badge recyclable">♻ Recyclable</span>
+    </div>
+    <div class="class-card">
+      <div class="class-icon" style="background:rgba(158,158,158,0.15)">🥫</div>
+      <div class="class-name">Metal</div>
+      <div class="class-desc">Aluminum cans, tins. Highly valuable recyclable material.</div>
+      <span class="class-badge recyclable">♻ Recyclable</span>
+    </div>
+    <div class="class-card">
+      <div class="class-icon" style="background:rgba(76,175,80,0.15)">📄</div>
+      <div class="class-name">Paper</div>
+      <div class="class-desc">Newspapers, magazines, office paper. Keep dry.</div>
+      <span class="class-badge recyclable">♻ Recyclable</span>
+    </div>
+    <div class="class-card">
+      <div class="class-icon" style="background:rgba(255,152,0,0.15)">🧴</div>
+      <div class="class-name">Plastic</div>
+      <div class="class-desc">Bottles, containers. Check number (1-7) for recycling rules.</div>
+      <span class="class-badge recyclable">♻ Recyclable</span>
+    </div>
+    <div class="class-card">
+      <div class="class-icon" style="background:rgba(244,67,54,0.15)">🗑️</div>
+      <div class="class-name">Trash</div>
+      <div class="class-desc">General waste. Cannot be recycled — goes to landfill.</div>
+      <span class="class-badge not-recyclable">✕ Not Recyclable</span>
+    </div>
+  </div>
+</section>
+
+<section class="how-section" id="how">
+  <div class="how-inner">
+    <div class="section-tag">Process</div>
+    <h2 class="section-title">How It Works</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-title">Upload Image</div>
+        <div class="step-desc">Take a photo or upload an existing image of any waste item from your device.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-title">CNN Analysis</div>
+        <div class="step-desc">MobileNetV2 CNN model analyzes the image and classifies the waste type instantly.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-title">Get Guidance</div>
+        <div class="step-desc">Receive recycling instructions, disposal tips, and environmental impact info.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="tech-section">
+  <div class="section-tag">Tech Stack</div>
+  <h2 class="section-title">Built With</h2>
+  <div class="tech-pills">
+    <span class="tech-pill">Python</span>
+    <span class="tech-pill">TensorFlow / Keras</span>
+    <span class="tech-pill">MobileNetV2 CNN</span>
+    <span class="tech-pill">Flask</span>
+    <span class="tech-pill">SQLite</span>
+    <span class="tech-pill">HTML5 / CSS3</span>
+    <span class="tech-pill">JavaScript</span>
+    <span class="tech-pill">TrashNet Dataset</span>
+    <span class="tech-pill">Google Colab</span>
+  </div>
+</section>
+
+<section class="cta-section">
+  <div class="cta-box">
+    <h2 class="cta-title">Classify Your Waste Now</h2>
+    <p class="cta-sub">Upload any image and get instant recycling guidance powered by deep learning.</p>
+    <a href="detect.html" class="btn-primary">Start Detection →</a>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-text">TrashAI — CNN-Based Waste Classification | TensorFlow + MobileNetV2</div>
+  <div class="footer-logo">TrashAI</div>
+</footer>
+
+</body>
+</html>

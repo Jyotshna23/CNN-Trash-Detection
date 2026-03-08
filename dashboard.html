@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TrashAI - Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="style.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+.main{padding:120px 60px 80px;max-width:1200px;margin:0 auto;position:relative;z-index:1;}
+.page-title{font-family:'Syne',sans-serif;font-size:42px;font-weight:800;letter-spacing:-1px;margin-bottom:8px;}
+.page-sub{color:var(--muted);font-size:16px;margin-bottom:48px;}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:40px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;}
+.stat-label{font-size:13px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;}
+.stat-value{font-family:'Syne',sans-serif;font-size:36px;font-weight:800;color:var(--accent);}
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:40px;}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;}
+.chart-card h3{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:20px;}
+.table-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;}
+.table-card h3{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:20px;}
+table{width:100%;border-collapse:collapse;}
+th{text-align:left;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:10px 12px;border-bottom:1px solid var(--border);}
+td{padding:12px;font-size:14px;border-bottom:1px solid rgba(30,58,30,0.5);}
+tr:last-child td{border-bottom:none;}
+.recyclable-yes{color:var(--accent);font-weight:600;}
+.recyclable-no{color:var(--danger);font-weight:600;}
+.empty-state{text-align:center;padding:60px;color:var(--muted);}
+.empty-icon{font-size:48px;margin-bottom:16px;}
+</style>
+</head>
+<body>
+<nav>
+  <a href="index.html" class="logo">Trash<span>AI</span></a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="detect.html">Detect</a></li>
+    <li><a href="dashboard.html" style="color:var(--accent)">Dashboard</a></li>
+  </ul>
+  <a href="detect.html" class="nav-cta">New Detection →</a>
+</nav>
+
+<div class="main">
+  <h1 class="page-title">Dashboard</h1>
+  <p class="page-sub">Detection history and recycling statistics.</p>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total Detections</div>
+      <div class="stat-value" id="totalDetections">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Recyclable Items</div>
+      <div class="stat-value" id="recyclableCount">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Non-Recyclable</div>
+      <div class="stat-value" id="trashCount" style="color:var(--danger)">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Recycle Rate</div>
+      <div class="stat-value" id="recycleRate">0%</div>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="chart-card">
+      <h3>Detections by Category</h3>
+      <canvas id="barChart" height="200"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>Recyclable vs Non-Recyclable</h3>
+      <canvas id="pieChart" height="200"></canvas>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <h3>Recent Detections</h3>
+    <div id="tableContainer">
+      <div class="empty-state">
+        <div class="empty-icon">📊</div>
+        <p>No detections yet. <a href="detect.html" style="color:var(--accent)">Start detecting!</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-text">TrashAI — CNN-Based Waste Classification | TensorFlow + MobileNetV2</div>
+  <div class="footer-logo">TrashAI</div>
+</footer>
+
+<script>
+const COLORS = {
+  cardboard: '#8B6914', glass: '#2196F3', metal: '#9E9E9E',
+  paper: '#4CAF50', plastic: '#FF9800', trash: '#F44336'
+};
+
+async function loadStats() {
+  try {
+    const res  = await fetch('/api/stats');
+    const data = await res.json();
+
+    document.getElementById('totalDetections').textContent = data.total || 0;
+    document.getElementById('recyclableCount').textContent = data.recyclable || 0;
+    document.getElementById('trashCount').textContent = (data.total - data.recyclable) || 0;
+    const rate = data.total > 0 ? Math.round((data.recyclable / data.total) * 100) : 0;
+    document.getElementById('recycleRate').textContent = rate + '%';
+
+    const breakdown = data.breakdown || {};
+    const labels = Object.keys(breakdown);
+    const values = Object.values(breakdown);
+
+    if(labels.length > 0) {
+      // Bar chart
+      new Chart(document.getElementById('barChart'), {
+        type: 'bar',
+        data: {
+          labels: labels.map(l => l.charAt(0).toUpperCase() + l.slice(1)),
+          datasets: [{
+            data: values,
+            backgroundColor: labels.map(l => COLORS[l] || '#39d353'),
+            borderRadius: 6,
+          }]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: '#6a8f6a' }, grid: { color: 'rgba(30,58,30,0.5)' } },
+            y: { ticks: { color: '#6a8f6a' }, grid: { color: 'rgba(30,58,30,0.5)' } }
+          }
+        }
+      });
+
+      // Pie chart
+      new Chart(document.getElementById('pieChart'), {
+        type: 'doughnut',
+        data: {
+          labels: ['Recyclable', 'Non-Recyclable'],
+          datasets: [{
+            data: [data.recyclable, data.total - data.recyclable],
+            backgroundColor: ['#39d353', '#F44336'],
+            borderWidth: 0,
+          }]
+        },
+        options: {
+          plugins: { legend: { labels: { color: '#e8f5e9' } } },
+          cutout: '65%'
+        }
+      });
+    }
+
+    if(data.recent && data.recent.length > 0) {
+      document.getElementById('tableContainer').innerHTML = `
+        <table>
+          <thead><tr><th>Class</th><th>Confidence</th><th>Recyclable</th><th>Date</th></tr></thead>
+          <tbody>
+            ${data.recent.map(r => `
+              <tr>
+                <td style="text-transform:capitalize;font-weight:600">${r.predicted_class}</td>
+                <td>${r.confidence.toFixed(1)}%</td>
+                <td class="${r.is_recyclable ? 'recyclable-yes' : 'recyclable-no'}">${r.is_recyclable ? '♻ Yes' : '✕ No'}</td>
+                <td style="color:var(--muted)">${r.created_at}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>`;
+    }
+  } catch(e) {
+    console.log('Stats load error:', e);
+  }
+}
+
+loadStats();
+</script>
+</body>
+</html>

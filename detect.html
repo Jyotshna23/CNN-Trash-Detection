@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TrashAI - Detect</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#0a0f0a;--surface:#111811;--card:#162016;--accent:#39d353;--accent2:#7ee787;--text:#e8f5e9;--muted:#6a8f6a;--border:#1e3a1e;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(57,211,83,0.05) 0%,transparent 60%);pointer-events:none;z-index:0;}
+
+nav{position:fixed;top:0;width:100%;z-index:100;padding:20px 60px;display:flex;justify-content:space-between;align-items:center;background:rgba(10,15,10,0.8);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+.logo{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--accent);text-decoration:none;}
+.logo span{color:var(--text);}
+.back-btn{color:var(--muted);text-decoration:none;font-size:14px;display:flex;align-items:center;gap:6px;transition:color 0.2s;}
+.back-btn:hover{color:var(--accent);}
+
+.main{padding:120px 60px 80px;max-width:900px;margin:0 auto;position:relative;z-index:1;}
+.page-title{font-family:'Syne',sans-serif;font-size:42px;font-weight:800;letter-spacing:-1px;margin-bottom:8px;}
+.page-sub{color:var(--muted);font-size:16px;margin-bottom:48px;}
+
+.upload-area{background:var(--card);border:2px dashed var(--border);border-radius:16px;padding:60px;text-align:center;cursor:pointer;transition:all 0.3s;position:relative;overflow:hidden;}
+.upload-area:hover,.upload-area.drag-over{border-color:var(--accent);background:rgba(57,211,83,0.03);}
+.upload-icon{font-size:48px;margin-bottom:16px;}
+.upload-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:8px;}
+.upload-sub{color:var(--muted);font-size:14px;margin-bottom:24px;}
+.upload-btn{background:var(--accent);color:#000;padding:12px 28px;border-radius:8px;font-weight:700;font-size:14px;font-family:'Syne',sans-serif;border:none;cursor:pointer;transition:all 0.2s;}
+.upload-btn:hover{background:var(--accent2);}
+#fileInput{display:none;}
+
+.preview-section{display:none;margin-top:32px;}
+.preview-img{width:100%;max-height:400px;object-fit:contain;border-radius:12px;border:1px solid var(--border);}
+.detect-btn{width:100%;margin-top:20px;background:var(--accent);color:#000;padding:18px;border-radius:10px;font-weight:700;font-size:18px;font-family:'Syne',sans-serif;border:none;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:10px;}
+.detect-btn:hover{background:var(--accent2);}
+.detect-btn:disabled{opacity:0.5;cursor:not-allowed;}
+
+.loading{display:none;text-align:center;padding:40px;}
+.spinner{width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+.result-section{display:none;margin-top:32px;}
+.result-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;}
+.result-header{display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border);}
+.result-icon{width:64px;height:64px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0;}
+.result-class{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;text-transform:capitalize;}
+.result-badge{display:inline-block;padding:4px 14px;border-radius:100px;font-size:13px;font-weight:600;margin-top:4px;}
+.recyclable{background:rgba(57,211,83,0.15);color:var(--accent);}
+.not-recyclable{background:rgba(244,67,54,0.15);color:#f44336;}
+
+.confidence-row{margin-bottom:24px;}
+.conf-label{font-size:13px;color:var(--muted);margin-bottom:8px;display:flex;justify-content:space-between;}
+.conf-bar{height:8px;background:var(--border);border-radius:100px;overflow:hidden;}
+.conf-fill{height:100%;background:var(--accent);border-radius:100px;transition:width 1s ease;}
+
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
+.info-box{background:var(--surface);border-radius:10px;padding:16px;}
+.info-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+.info-value{font-size:15px;line-height:1.6;}
+
+.tips-section{margin-top:16px;}
+.tips-title{font-size:14px;color:var(--muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;}
+.tips-list{list-style:none;display:flex;flex-direction:column;gap:8px;}
+.tips-list li{font-size:14px;color:var(--text);padding-left:20px;position:relative;}
+.tips-list li::before{content:'→';position:absolute;left:0;color:var(--accent);}
+
+.top3{margin-top:24px;padding-top:24px;border-top:1px solid var(--border);}
+.top3-title{font-size:13px;color:var(--muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;}
+.top3-item{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.top3-name{font-size:14px;width:100px;text-transform:capitalize;}
+.top3-bar{flex:1;height:6px;background:var(--border);border-radius:100px;overflow:hidden;}
+.top3-fill{height:100%;background:var(--accent);opacity:0.5;border-radius:100px;}
+.top3-pct{font-size:13px;color:var(--muted);width:40px;text-align:right;}
+
+.new-btn{width:100%;margin-top:20px;background:transparent;color:var(--accent);padding:14px;border-radius:10px;font-weight:600;font-size:15px;font-family:'Syne',sans-serif;border:1px solid var(--accent);cursor:pointer;transition:all 0.2s;}
+.new-btn:hover{background:rgba(57,211,83,0.1);}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="logo">Trash<span>AI</span></a>
+  <a href="index.html" class="back-btn">← Back to Home</a>
+</nav>
+
+<div class="main">
+  <h1 class="page-title">Detect Waste</h1>
+  <p class="page-sub">Upload an image and our CNN model will classify it instantly.</p>
+
+  <div class="upload-area" id="uploadArea">
+    <div class="upload-icon">📸</div>
+    <div class="upload-title">Drop your image here</div>
+    <div class="upload-sub">Supports JPG, PNG, WEBP — Max 10MB</div>
+    <button class="upload-btn" onclick="document.getElementById('fileInput').click()">Choose File</button>
+    <input type="file" id="fileInput" accept="image/*"/>
+  </div>
+
+  <div class="preview-section" id="previewSection">
+    <img class="preview-img" id="previewImg" src="" alt="Preview"/>
+    <button class="detect-btn" id="detectBtn" onclick="runDetection()">
+      🔍 Analyze Image
+    </button>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p style="color:var(--muted)">Analyzing image...</p>
+  </div>
+
+  <div class="result-section" id="resultSection">
+    <div class="result-card">
+      <div class="result-header">
+        <div class="result-icon" id="resultIcon">🗑️</div>
+        <div>
+          <div class="result-class" id="resultClass">-</div>
+          <span class="result-badge" id="resultBadge">-</span>
+        </div>
+      </div>
+
+      <div class="confidence-row">
+        <div class="conf-label">
+          <span>Confidence</span>
+          <span id="confPct">0%</span>
+        </div>
+        <div class="conf-bar"><div class="conf-fill" id="confFill" style="width:0%"></div></div>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-box">
+          <div class="info-label">About</div>
+          <div class="info-value" id="infoDesc">-</div>
+        </div>
+        <div class="info-box">
+          <div class="info-label">How to Dispose</div>
+          <div class="info-value" id="infoDisposal">-</div>
+        </div>
+      </div>
+
+      <div class="tips-section">
+        <div class="tips-title">Recycling Tips</div>
+        <ul class="tips-list" id="tipsList"></ul>
+      </div>
+
+      <div class="top3">
+        <div class="top3-title">Top Predictions</div>
+        <div id="top3List"></div>
+      </div>
+    </div>
+    <button class="new-btn" onclick="resetPage()">↩ Detect Another</button>
+  </div>
+</div>
+
+<script>
+const ICONS = {cardboard:'📦',glass:'🍶',metal:'🥫',paper:'📄',plastic:'🧴',trash:'🗑️'};
+let selectedFile = null;
+
+const uploadArea = document.getElementById('uploadArea');
+const fileInput  = document.getElementById('fileInput');
+
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('drag-over'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
+uploadArea.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadArea.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if(file && file.type.startsWith('image/')) handleFile(file);
+});
+
+fileInput.addEventListener('change', e => {
+  if(e.target.files[0]) handleFile(e.target.files[0]);
+});
+
+function handleFile(file) {
+  selectedFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('previewImg').src = e.target.result;
+    document.getElementById('previewSection').style.display = 'block';
+    document.getElementById('resultSection').style.display = 'none';
+    uploadArea.style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function runDetection() {
+  if(!selectedFile) return;
+  document.getElementById('detectBtn').disabled = true;
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('resultSection').style.display = 'none';
+
+  try {
+    const formData = new FormData();
+    formData.append('image', selectedFile);
+
+    const res  = await fetch('/api/detect', { method:'POST', body: formData });
+    const data = await res.json();
+
+    document.getElementById('loading').style.display = 'none';
+
+    if(data.success) {
+      showResult(data);
+    } else {
+      alert('Error: ' + data.error);
+      document.getElementById('detectBtn').disabled = false;
+    }
+  } catch(e) {
+    document.getElementById('loading').style.display = 'none';
+    alert('Server error. Make sure Flask is running.');
+    document.getElementById('detectBtn').disabled = false;
+  }
+}
+
+function showResult(data) {
+  const cls = data.predicted_class;
+  const info = data.info || {};
+
+  document.getElementById('resultIcon').textContent = ICONS[cls] || '🗑️';
+  document.getElementById('resultClass').textContent = cls.charAt(0).toUpperCase() + cls.slice(1);
+
+  const badge = document.getElementById('resultBadge');
+  badge.textContent = data.is_recyclable ? '♻ Recyclable' : '✕ Not Recyclable';
+  badge.className = 'result-badge ' + (data.is_recyclable ? 'recyclable' : 'not-recyclable');
+
+  document.getElementById('confPct').textContent = data.confidence.toFixed(1) + '%';
+  setTimeout(() => {
+    document.getElementById('confFill').style.width = data.confidence + '%';
+  }, 100);
+
+  document.getElementById('infoDesc').textContent = info.description || '-';
+  document.getElementById('infoDisposal').textContent = info.disposal || '-';
+
+  const tipsList = document.getElementById('tipsList');
+  tipsList.innerHTML = (info.tips || []).map(t => `<li>${t}</li>`).join('');
+
+  const top3 = document.getElementById('top3List');
+  top3.innerHTML = (data.top3 || []).map(([name, pct]) =>
+    `<div class="top3-item">
+      <span class="top3-name">${name}</span>
+      <div class="top3-bar"><div class="top3-fill" style="width:${pct}%;opacity:${name===cls?1:0.4}"></div></div>
+      <span class="top3-pct">${pct.toFixed(1)}%</span>
+    </div>`
+  ).join('');
+
+  document.getElementById('resultSection').style.display = 'block';
+}
+
+function resetPage() {
+  selectedFile = null;
+  document.getElementById('previewSection').style.display = 'none';
+  document.getElementById('resultSection').style.display = 'none';
+  document.getElementById('uploadArea').style.display = 'block';
+  document.getElementById('detectBtn').disabled = false;
+  document.getElementById('confFill').style.width = '0%';
+  fileInput.value = '';
+}
+</script>
+</body>
+</html>
